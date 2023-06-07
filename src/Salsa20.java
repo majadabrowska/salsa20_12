@@ -1,6 +1,10 @@
 import java.util.Arrays;
 import java.lang.Math;
 
+/**
+ * Salsa20 class contains methods allowing encryption and decryption of data in Salsa20 stream cipher.
+ *
+ */
 public class Salsa20 {
 
     /**
@@ -148,10 +152,12 @@ public class Salsa20 {
     }
 
     /**
-     * The Hash Function is used to convert input 64 bytes using DoubleRound10 and LittleEndian functions.
-     * It creates 16 words by calling the LittleEndian function on every further 4 of 64 bytes
-     * @param x 64-bytes long input table
-     * @return
+     * The Hash Function is used to convert 64 input bytes using previously defined functions.
+     * It creates 16 words by calling the LittleEndian function on every 4 of 64 bytes.
+     * Then it modifies each word using The DoubleRound10 function.
+     * At the end, it creates 64 bytes of output by calling The LittleEndianInverse function on the sum of each input word and the modified one.
+     * @param x 64-byte long input table
+     * @return 64 byte long output table
      */
    public int[] hash(int[] x) {
         if (x.length != 64) { throw new IllegalArgumentException("hash"); }
@@ -171,6 +177,14 @@ public class Salsa20 {
        }
         return result;
     }
+
+    /**
+     * The Expansion Function is used to convert 2 input byte arrays into a 64-byte long array using The Hash Function.\
+     * The first array may be either 16 or 32 byte long. The second array is necessarily 16 byte long.
+     * @param key
+     * @param nonce
+     * @return
+     */
     public int[] expansion(int[] key, int[] nonce) {
 
 
