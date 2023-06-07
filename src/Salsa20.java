@@ -3,7 +3,11 @@ import java.lang.Math;
 
 public class Salsa20 {
 
-
+    /**
+     * The QuarterRound Function is used to convert four input values using XOR and rotation operations
+     * @param x0, x1, x2, x3 - 4 input words
+     * @return table containing 4 words
+     */
     public int[] quarterRound(int x0, int x1, int x2, int x3) {
         int[] x = {x0, x1, x2, x3};
         x[1] = x[1] ^ (Integer.rotateLeft( (x[0] + x[3]), 7) );
@@ -12,6 +16,13 @@ public class Salsa20 {
         x[0] = x[0] ^ (Integer.rotateLeft( (x[3] + x[2]), 18) );
         return x;
     }
+
+    /**
+     * The RowRound Function is used to convert the input table containing 16 words using the QuarterRound Function.
+     * Each use of QuarterRound function concern each row of 4x4 matrix that represents the input table.
+     * @param x table of 16 words
+     * @return 16-element table
+     */
     public int[] rowRound(int[] x) {
         if (x.length != 16) {throw new IllegalArgumentException("rowRound");}
 
@@ -44,7 +55,12 @@ public class Salsa20 {
         result[14] =temp[3];
         return result;
     }
-
+    /**
+     * The ColumnRound Function is used to convert the input table containing 16 words using the QuarterRound Function
+     * Each use of QuarterRound function concern each column of 4x4 matrix that represents the input table.
+     * @param x the 16-word input table
+     * @return the 16-word output table
+     */
     public int[] columnRound(int[] x) {
         if (x.length != 16) { throw new IllegalArgumentException("ColumnRound"); }
 
@@ -78,6 +94,7 @@ public class Salsa20 {
         return result;
     }
 
+
     public int[] doubleRound(int[] x) {
         if (x.length != 16) { throw new IllegalArgumentException("doubleRound"); }
         int[] result = columnRound(x);
@@ -85,6 +102,12 @@ public class Salsa20 {
 
         return result;
     }
+    /**
+     * The DoubleRound10 Function is used to convert a 16-word input table using the composition of RowRound and ColumnRounf functions.
+     * The operation is repeated 10 times.
+     * @param x the 16-word input table
+     * @return the 16-word output table
+     */
     public int[] doubleRound10(int[] x) {
         if (x.length != 16) { throw new IllegalArgumentException("doubleRound10"); }
         int[] result;
@@ -96,6 +119,12 @@ public class Salsa20 {
         }
         return result;
     }
+
+    /**
+     * The LittleEndian Function is used to reverse the order of the given 4 bytes
+     * @param x0, x1, x2, x3 - 4 input words of a byte length
+     * @return an int value representing the reversed bytes
+     */
     public int littleEndian(int x0, int x1, int x2, int x3) {
         /*int x0 =  (x >> 24) & 0xFF;
         int x1 =  (x >> 16) & 0xFF;
@@ -104,6 +133,11 @@ public class Salsa20 {
         int result = x0 + (x1 << 8) + (x2 << 16) + (x3 << 24);
         return result;
     }
+    /**
+     * The LittleEndianInverse Function is used to inverse the result of The LittleEndian Function.
+     * @param x an input word of 4 bytes length
+     * @return a table of four bytes given in a reversed order
+     */
     public int[] littleEndianInverse(int x) {
         /*int x0 = (x & 0xFF) & 0xFF;
         int x1 =  (x >> 8) & 0xFF;
