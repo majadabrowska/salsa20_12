@@ -147,6 +147,12 @@ public class Salsa20 {
         return result;
     }
 
+    /**
+     * The Hash Function is used to convert input 64 bytes using DoubleRound10 and LittleEndian functions.
+     * It creates 16 words by calling the LittleEndian function on every further 4 of 64 bytes
+     * @param x 64-bytes long input table
+     * @return
+     */
    public int[] hash(int[] x) {
         if (x.length != 64) { throw new IllegalArgumentException("hash"); }
         int[] result = new int[64];
