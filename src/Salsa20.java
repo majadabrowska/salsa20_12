@@ -2,6 +2,71 @@ import java.util.Arrays;
 import java.lang.Math;
 
 public class Salsa20 {
+    byte[] key;
+    byte[] nonce;
+
+    public Salsa20(){}
+    public Salsa20(String key, String nonce) {
+        this.nonce = new byte[8];
+
+        byte[] keyBytes = key.getBytes();
+        byte[] nonceBytes = nonce.getBytes();
+
+        int length = key.length();
+        if( length < 16 ) {
+            this.key = new byte[16];
+            fillTo16(keyBytes);
+        } else if ( length == 16 ) {
+            this.key = keyBytes;
+        } else if ( length < 32 ) {
+            this.key = new byte[32];
+            fillTo32(keyBytes);
+        } else if ( length == 32 ) {
+            this.key = keyBytes;
+        } else {
+            for (int i = 0; i < 32; i++) {
+                this.key[i] = keyBytes[i];
+            }
+        }
+
+        length = nonceBytes.length;
+        if ( length < 8 ) {
+            fillNonce(nonceBytes);
+        } else if ( length == 8 ) {
+            this.nonce = nonceBytes;
+        } else {
+            for (int i = 0; i < 8; i++) {
+                this.nonce[i] = nonceBytes[i];
+            }
+        }
+    }
+    private void fillNonce(byte[] input) {
+        int i = 0;
+        for ( ; i < input.length; i++ ) {
+            nonce[i] = input[i];
+        }
+        for ( ; i < 8; i++ ) {
+            nonce[i] = 0;
+        }
+    }
+    private void fillTo16(byte[] input) {
+        int i = 0;
+        for ( ; i < input.length; i++ ) {
+            key[i] = input[i];
+        }
+        for ( ; i < 16; i++ ) {
+            key[i] = 0;
+        }
+    }
+    private void fillTo32(byte[] input) {
+        int i = 0;
+        for ( ; i < input.length; i++ ) {
+            key[i] = input[i];
+        }
+        for ( ; i < 32; i++ ) {
+            key[i] = 0;
+        }
+    }
 
 
     public int[] quarterRound(int x0, int x1, int x2, int x3) {
@@ -96,57 +161,65 @@ public class Salsa20 {
         }
         return result;
     }
-    public int littleEndian(int x0, int x1, int x2, int x3) {
-        /*int x0 =  (x >> 24) & 0xFF;
-        int x1 =  (x >> 16) & 0xFF;
-        int x2 =  (x >> 8) & 0xFF;
-        int x3 = (x & 0xFF) & 0xFF;*/
-        int result = x0 + (x1 << 8) + (x2 << 16) + (x3 << 24);
+    public int littleEndian(byte x0, byte x1, byte x2, byte x3) {
+        /*int intx0 = x0&0xFF;
+        int intx1 = x1&0xFF;
+        int intx2 = x2&0xFF;
+        int intx3 = x3&0xFF;
+        int result = intx0 + (intx1 << 8) + (intx2 << 16) + (intx3 << 24);*/
+        int result = (((x3 & 0xFF) << 8 | x2 & 0xFF) << 8 | x1 & 0xFF) << 8 | x0 & 0xFF;;
         return result;
     }
-    public int[] littleEndianInverse(int x) {
+    public byte[] littleEndianInverse(int x) {
         /*int x0 = (x & 0xFF) & 0xFF;
         int x1 =  (x >> 8) & 0xFF;
         int x2 =  (x >> 16) & 0xFF;
         int x3 =  (x >> 24) & 0xFF;*/
-        int[] result = {(x & 0xFF), ((x >> 8) & 0xFF), ((x >> 16) & 0xFF), ((x >> 24) & 0xFF)};
+        byte[] result = {(byte)(x & 0xFF), (byte)((x >> 8) & 0xFF), (byte)((x >> 16) & 0xFF), (byte)((x >> 24) & 0xFF)};
         return result;
     }
 
-   public int[] hash(int[] x) {
+   public byte[] hash(byte[] x) {
         if (x.length != 64) { throw new IllegalArgumentException("hash"); }
-        int[] result = new int[64];
-        int[] doubleRound10X = new int[16];
+        byte[] result = new byte[64];
+
+        int[] doubleRound10X;
+
         int[] xLittleEndian = new int[16];
+
         for (int i = 0; i < 16; i++) {
             xLittleEndian[i] = littleEndian( x[0 + (4 * i)], x[1 + ( 4 * i )], x[2 + ( 4 * i )], x[3 + ( 4 * i )] );
         }
+
         doubleRound10X = doubleRound10(xLittleEndian);
-        int[] tempFourBytes;
-       for (int i = 0; i < 16; i++) {
-           tempFourBytes = littleEndianInverse(xLittleEndian[i] + doubleRound10X[i]);
-           for (int j = 0; j < 4; j++) {
-               result[(4 * i) + j] = tempFourBytes[j];
-           }
-       }
+
+
+        byte[] tempFourBytes;
+
+        for (int i = 0; i < 16; i++) {
+            tempFourBytes = littleEndianInverse(xLittleEndian[i] + doubleRound10X[i]);
+            for (int j = 0; j < 4; j++) {
+                result[(4 * i) + j] = tempFourBytes[j];
+            }
+        }
         return result;
     }
-    public int[] expansion(int[] key, int[] nonce) {
+    public byte[] expansion(byte[] key, byte[] nonce) {
 
 
-        int[] hashInput = new int[64];
+        byte[] hashInput = new byte[64];
 
         // In case of 32 bytes
-        int[] a0 = {101, 120, 112, 97};
-        int[] a1 = {110, 100, 32, 51};
-        int[] a2 = {50, 45, 98, 121};
-        int[] a3 = {116, 101, 32, 107};
+        byte[] a0 = {101, 120, 112, 97};
+        byte[] a1 = {110, 100, 32, 51};
+        byte[] a2 = {50, 45, 98, 121};
+        byte[] a3 = {116, 101, 32, 107};
 
         // In case of 16 bytes
-        int[] b0 = {101, 120, 112, 97};
-        int[] b1 = {110, 100, 32, 49};
-        int[] b2 = {54, 45, 98, 121};
-        int[] b3 = {116, 101, 32, 107};
+        byte[] b0 = {101, 120, 112, 97};
+        byte[] b1 = {110, 100, 32, 49};
+        byte[] b2 = {54, 45, 98, 121};
+        byte[] b3 = {116, 101, 32, 107};
 
         if (key.length == 32) {
             for (int i = 0; i < 4; i++) {
@@ -177,5 +250,41 @@ public class Salsa20 {
             }
         }
         return hash(hashInput);
+    }
+
+    public byte[] encrypt(byte[] key, byte[] nonce, byte[] message) {
+        byte[] msgFilled = new byte[64];
+        byte[] exp = expansion(key, nonce);
+        if ( message.length < 64 ) {
+            int i = 0;
+            for ( ; i < message.length; i++ ) {
+                msgFilled[i] = message[i];
+            }
+            for ( ; i < 64; i++ ) {
+                msgFilled[i] = 0;
+            }
+        } else {
+            msgFilled = message;
+        }
+        for (int i = 0; i < 64; i++) {
+            msgFilled[i] = (byte) (msgFilled[i] ^ exp[i]);
+        }
+        return msgFilled;
+    }
+
+    public String decrypt (byte[] key, byte[] nonce, byte[] ciphertext) {
+        byte[] exp = expansion(key, nonce);
+        byte[] plainText = new byte[64];
+        int mark = 0;
+        for (int i = 0; i < 64; i++) {
+            plainText[i] = (byte) (ciphertext[i] ^ exp[i]);
+            if ( plainText[i] == 0 ) {
+                mark = i;
+                break;
+            }
+        }
+        byte[] plainTextFiltered = Arrays.copyOfRange(plainText, 0, mark);
+        String result = new String(plainTextFiltered);
+        return result;
     }
 }

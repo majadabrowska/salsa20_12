@@ -1,3 +1,4 @@
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -6,16 +7,17 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.*;
 
 class Salsa20Test {
+
     Salsa20 s;
 
-    int[] k = new int[32];
-    int[] n = new int[16];
+    byte[] k = new byte[32];
+    byte[] n = new byte[16];
     void expansionTestVectorsSetup() {
         for (int i = 0; i < 16; i++) {
-            k[i] = i + 1;
-            k[16 + i] = 201 + i;
+            k[i] = (byte) (i + 1);
+            k[16 + i] = (byte) (201 + i);
 
-            n[i] = 101 + i;
+            n[i] = (byte) (101 + i);
         }
     }
     @BeforeEach
@@ -126,26 +128,25 @@ class Salsa20Test {
     @Test
     void littleEndianTest1() {
         //int initial = ByteBuffer.wrap(array).getInt();
-        int result = s.littleEndian(86,75,30,9);
+        int result = s.littleEndian((byte)86,(byte)75,(byte)30,(byte)9);
         int expected = 0x091E4B56;
         assertEquals(expected,result);
-        int[] array = {86,75,30,9};
-        int[] inverse = s.littleEndianInverse(0x091E4B56);
+        byte[] array = {86,75,30,9};
+        byte[] inverse = s.littleEndianInverse(0x091E4B56);
         assertArrayEquals(array, inverse);
     }
     @Test
     void littleEndianTest2() {
         int[] array = {};
         //int initial = ByteBuffer.wrap(array).getInt();
-        int result = s.littleEndian(0,0,0,0);
+        int result = s.littleEndian((byte)0,(byte)0,(byte)0,(byte)0);
         int expected = 0;
         assertEquals(expected,result);
     }
     @Test
     void littleEndianTest3() {
         int[] array = {};
-        //int initial = (array[0] << 24) | (array[1] << 16) | (array[2] << 8) | array[3];
-        int result = s.littleEndian(255, 255, 255, 250);
+        int result = s.littleEndian((byte)255, (byte)255, (byte)255, (byte)250);
         int expected = 0xfaffffff;
         assertEquals(expected,result);
     }
@@ -153,12 +154,12 @@ class Salsa20Test {
 
     @Test
     void hashTest1() {
-        int[] array = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        byte[] array = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-        int[] result = s.hash(array);
-        int[] expected = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        byte[] result = s.hash(array);
+        byte[] expected = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -170,12 +171,20 @@ class Salsa20Test {
                 49,237,179, 48, 1,106,178,219,175,199,166, 48, 86, 16,179,207,
                 31,240, 32, 63, 15, 83, 93,161,116,147, 48,113,238, 55,204, 36,
                 79,201,235, 79, 3, 81,156, 47,203, 26,244,243, 88,118,104, 54};
-        int[] result = s.hash(array);
+        byte[] byteArray = new byte[64];
+        for (int i = 0; i < 64; i++) {
+            byteArray[i] = (byte) array[i];
+        }
+        byte[] result = s.hash(byteArray);
         int[] expected = {109, 42,178,168,156,240,248,238,168,196,190,203, 26,110,170,154,
                 29, 29,150, 26,150, 30,235,249,190,163,251, 48, 69,144, 51, 57,
                 118, 40,152,157,180, 57, 27, 94,107, 42,236, 35, 27,111,114,114,
                 219,236,232,135,111,155,110, 18, 24,232, 95,158,179, 19, 48,202};
-        assertArrayEquals(expected,result);
+        byte[] byteExpected = new byte[64];
+        for (int i = 0; i < 64; i++) {
+            byteExpected[i] = (byte) expected[i];
+        }
+        assertArrayEquals(byteExpected,result);
     }
     @Test
     void hashTest3() {
@@ -183,12 +192,20 @@ class Salsa20Test {
                 191,187,234,136,211,159, 13,115, 76, 55, 82,183, 3,117,222, 37,
                 86, 16,179,207, 49,237,179, 48, 1,106,178,219,175,199,166, 48,
                 238, 55,204, 36, 31,240, 32, 63, 15, 83, 93,161,116,147, 48,113};
-        int[] result = s.hash(array);
+        byte[] byteArray = new byte[64];
+        for (int i = 0; i < 64; i++) {
+            byteArray[i] = (byte) array[i];
+        }
+        byte[] result = s.hash(byteArray);
         int[] expected = {179, 19, 48,202,219,236,232,135,111,155,110, 18, 24,232, 95,158,
                 26,110,170,154,109, 42,178,168,156,240,248,238,168,196,190,203,
                 69,144, 51, 57, 29, 29,150, 26,150, 30,235,249,190,163,251, 48,
                 27,111,114,114,118, 40,152,157,180, 57, 27, 94,107, 42,236, 35};
-        assertArrayEquals(expected,result);
+        byte[] byteExpected = new byte[64];
+        for (int i = 0; i < 64; i++) {
+            byteExpected[i] = (byte) expected[i];
+        }
+        assertArrayEquals(byteExpected,result);
     }
     @Test
     void hashTest4() {
@@ -196,7 +213,11 @@ class Salsa20Test {
                 75, 27, 0,216, 16,122, 7, 89,162,104,101,147,213, 21, 54, 95,
                 225,253,139,176,105,132, 23,116, 76, 41,176,207,221, 34,157,108,
                 94, 94, 99, 52, 90,117, 91,220,146,190,239,143,196,176,130,186};
-        int[] result = s.hash(array);
+        byte[] byteArray = new byte[64];
+        for (int i = 0; i < 64; i++) {
+            byteArray[i] = (byte) array[i];
+        }
+        byte[] result = s.hash(byteArray);
         for (int i = 0; i < 999999; i++) {
             result = s.hash(result);
         }
@@ -204,29 +225,39 @@ class Salsa20Test {
                 192, 19,233, 33,159,197,154,160,128,243,219, 65,171,136,135,225,
                 123, 11, 68, 86,237, 82, 20,155,133,189, 9, 83,167,116,194, 78,
                 122,127,195,185,185,204,188, 90,245, 9,183,248,226, 85,245,104};
-        assertArrayEquals(expected,result);
+        byte[] byteExpected = new byte[64];
+        for (int i = 0; i < 64; i++) {
+            byteExpected[i] = (byte) expected[i];
+        }
+        assertArrayEquals(byteExpected,result);
     }
 
     @Test
     void expansionTest1() {
         expansionTestVectorsSetup();
-        int[] result = s.expansion(k, n);
+        byte[] result = s.expansion(k, n);
         int[] expected = {69, 37, 68, 39, 41, 15,107,193,255,139,122, 6,170,233,217, 98,
                 89,144,182,106, 21, 51,200, 65,239, 49,222, 34,215,114, 40,126,
                 104,197, 7,225,197,153, 31, 2,102, 78, 76,176, 84,245,246,184,
                 177,160,133,130, 6, 72,149,119,192,195,132,236,234,103,246, 74};
-        assertArrayEquals(expected,result);
+        byte[] byteExpected = new byte[64];
+        for (int i = 0; i < 64; i++) {
+            byteExpected[i] = (byte) expected[i];
+        }
+        assertArrayEquals(byteExpected,result);
     }
     @Test
     void expansionTest2() {
         expansionTestVectorsSetup();
-        int[] result = s.expansion(Arrays.copyOfRange(k,0,16), n);
+        byte[] result = s.expansion(Arrays.copyOfRange(k,0,16), n);
         int[] expected = {39,173, 46,248, 30,200, 82, 17, 48, 67,254,239, 37, 18, 13,247,
                 241,200, 61,144, 10, 55, 50,185, 6, 47,246,253,143, 86,187,225,
                 134, 85,110,246,161,163, 43,235,231, 94,171, 51,145,214,112, 29,
                 14,232, 5, 16,151,140,183,141,171, 9,122,181,104,182,177,193};
-        assertArrayEquals(expected,result);
+        byte[] byteExpected = new byte[64];
+        for (int i = 0; i < 64; i++) {
+            byteExpected[i] = (byte) expected[i];
+        }
+        assertArrayEquals(byteExpected,result);
     }
-
-
 }
