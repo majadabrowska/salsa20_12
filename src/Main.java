@@ -1,16 +1,22 @@
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Arrays;
 
 public class Main {
     public static void main(String[] args) {
-        Salsa20 s = new Salsa20("", "XD");
-        /*System.out.println(Arrays.toString(s.key));
-        System.out.println(Arrays.toString(s.nonce));*/
+        try {
+            FileWriter fw1 = new FileWriter(new File("ciphertext.txt"));
+            FileWriter fw2 = new FileWriter(new File("plaintext.txt"));
+            fw1.write("");
+            fw2.write("");
+            fw1.close();
+            fw2.close();
+        } catch (IOException ioe) {}
+        Salsa20 s = new Salsa20("1", "123");
+        s.encryptFile("secretMessage.txt");
+        s.decryptFile("ciphertext.txt");
 
-        String msg = "I wonder if it works...";
-        System.out.println("Plaintext is: \"" + msg + "\"");
-        byte[] message = msg.getBytes();
-        byte[] ciphertext = s.encrypt("".getBytes(),"XD".getBytes(), message);
-        System.out.println("Encrypted: " + Arrays.toString(ciphertext));
-        System.out.println("Decrypted text: \"" + s.decrypt("".getBytes(),"XD".getBytes(), ciphertext) + "\"'");
+
     }
 }

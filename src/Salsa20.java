@@ -1,3 +1,4 @@
+import java.io.*;
 import java.util.Arrays;
 import java.lang.Math;
 
@@ -251,28 +252,13 @@ public class Salsa20 {
         }
         return hash(hashInput);
     }
-
-    public byte[] encrypt(byte[] key, byte[] nonce, byte[] message) {
-        byte[] msgFilled = new byte[64];
-        byte[] exp = expansion(key, nonce);
-        if ( message.length < 64 ) {
-            int i = 0;
-            for ( ; i < message.length; i++ ) {
-                msgFilled[i] = message[i];
-            }
-            for ( ; i < 64; i++ ) {
-                msgFilled[i] = 0;
-            }
-        } else {
-            msgFilled = message;
+    private void padding (byte[] toPad, int presentLength, int desiredLength) {
+        for (int i = presentLength; i < desiredLength; i++) {
+            toPad[i] = 0;
         }
-        for (int i = 0; i < 64; i++) {
-            msgFilled[i] = (byte) (msgFilled[i] ^ exp[i]);
-        }
-        return msgFilled;
     }
 
-    public String decrypt (byte[] key, byte[] nonce, byte[] ciphertext) {
+    public String decryptString (byte[] key, byte[] nonce, byte[] ciphertext) {
         byte[] exp = expansion(key, nonce);
         byte[] plainText = new byte[64];
         int mark = 0;
@@ -287,4 +273,109 @@ public class Salsa20 {
         String result = new String(plainTextFiltered);
         return result;
     }
+
+    public void encryptFile (String filename) {
+        try {
+            FileInputStream fis = new FileInputStream(filename);
+
+            File ciphertext = new File("ciphertext.txt");
+            FileOutputStream fos = new FileOutputStream(ciphertext.getAbsolutePath(), true);
+
+            byte[] buffer = new byte[64];
+            int noBytesRead = fis.read(buffer);
+            byte[] keyStream;
+            byte[] nonceFilled = new byte[16];
+            long repetitions = 0;
+            while ( noBytesRead == 64 ) {
+                fillNonce(nonce, nonceFilled, repetitions);
+                keyStream = expansion(key, nonceFilled);
+                for (int i = 0; i < 64; i++) {
+                    buffer[i] = (byte) (buffer[i] ^ keyStream[i]);
+                }
+                fos.write(buffer);
+                repetitions++;
+                noBytesRead = fis.read(buffer);
+            }
+            if ( noBytesRead != 0 ) {
+                fillNonce(nonce, nonceFilled,repetitions);
+                padding(buffer, noBytesRead, 64);
+                keyStream = expansion(key, nonceFilled);
+                for (int i = 0; i < 64; i++) {
+                    buffer[i] = (byte) (buffer[i] ^ keyStream[i]);
+                }
+                fos.write(buffer);
+            }
+
+            fis.close();
+            fos.close();
+        } catch ( IOException ioe ) {
+            ioe.printStackTrace();
+        }
+    }
+
+    /**
+     *
+     * @param filename
+     */
+    void decryptFile (String filename) {
+        try {
+            FileInputStream fis = new FileInputStream(filename);
+            File plaintext = new File("plaintext.txt");
+            FileOutputStream fos = new FileOutputStream(plaintext.getAbsolutePath(), true);
+
+            byte[] buffer = new byte[64];
+            int noBytesRead = fis.read(buffer);
+            byte[] keyStream;
+            byte[] nonceFilled = new byte[16];
+            long repetitions = 0;
+            while ( noBytesRead == 64 ) {
+                fillNonce(nonce, nonceFilled, repetitions);
+                keyStream = expansion(key, nonceFilled);
+                int index = 0;
+                for ( ; index < 64; index++) {
+                    buffer[index] = (byte) (buffer[index] ^ keyStream[index]);
+                }
+                if ( buffer[index - 1] != 0 ) {
+                    fos.write(buffer);
+                    repetitions++;
+                    noBytesRead = fis.read(buffer);
+                } else {
+                    index = 0;
+                    // Deleting the value, so the while loop doesn't go off one last time
+                    noBytesRead = 0;
+                    while ( buffer[index] != 0 ) {
+                        fos.write(buffer[index]);
+                        index++;
+                    }
+                }
+            }
+            fis.close();
+            fos.close();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+    }
+
+    public void fillNonce(byte[] nonce, byte[] nonceFilled, long rep) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        try {
+            dos.writeLong(rep);
+            dos.flush();
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
+        byte[] longAsBytes = bos.toByteArray();
+        for (int i = 0; i < 8; i++) {
+            nonceFilled[i] = nonce[i];
+            nonceFilled[8+i] = longAsBytes[i];
+        }
+        try {
+            dos.close();
+            bos.close();
+        } catch (IOException ioe ) {
+            ioe.printStackTrace();
+        }
+    }
+
 }
