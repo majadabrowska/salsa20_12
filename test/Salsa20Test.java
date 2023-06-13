@@ -6,6 +6,12 @@ import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * All test vectors are from the algorithm's original documentation, by D. J. Bernstein.
+ * The link:
+ * https://cr.yp.to/snuffle/spec.pdf
+ */
+
 class Salsa20Test {
 
     Salsa20 s;

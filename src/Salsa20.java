@@ -1,38 +1,47 @@
 import java.io.*;
-import java.util.Arrays;
-import java.lang.Math;
 
 public class Salsa20 {
     byte[] key;
     byte[] nonce;
 
-    public Salsa20(){}
-    public Salsa20(String key, String nonce) {
+    /**
+     * constructor used only for testing purposes
+     */
+    public Salsa20() {}
+
+    /**
+     * This constructor takes both key and nonce as strings and converts them to bytes. If a nonce should be zero,
+     * an empty String should be provided. The constructor lets the user choose whether they want to operate on
+     * a 16-bit or a 32-bit key. If given key or nonce Strings are longer than their byte sizes, they are truncated
+     * @param key
+     * @param nonce
+     * @param keyMode
+     */
+    public Salsa20(String key, String nonce, int keyMode) {
+        if ( keyMode != 32 && keyMode != 16 ) {
+            IllegalArgumentException e = new IllegalArgumentException("Illegal argument in the constructor!");
+            throw e;
+        }
         this.nonce = new byte[8];
 
         byte[] keyBytes = key.getBytes();
         byte[] nonceBytes = nonce.getBytes();
 
+        // Filling the key array to chosen length
         int length = key.length();
-        if( length < 16 ) {
-            this.key = new byte[16];
-            fillTo16(keyBytes);
-        } else if ( length == 16 ) {
-            this.key = keyBytes;
-        } else if ( length < 32 ) {
-            this.key = new byte[32];
-            fillTo32(keyBytes);
-        } else if ( length == 32 ) {
-            this.key = keyBytes;
+        if (length <= keyMode) {
+            this.key = new byte[keyMode];
+            fillToKeySize(keyBytes, length, keyMode);
         } else {
-            for (int i = 0; i < 32; i++) {
+            this.key = new byte[keyMode];
+            for (int i = 0; i < keyMode; i++) {
                 this.key[i] = keyBytes[i];
             }
         }
-
+        // Filling the nonce to proper length
         length = nonceBytes.length;
         if ( length < 8 ) {
-            fillNonce(nonceBytes);
+            fillNonce(nonceBytes, length);
         } else if ( length == 8 ) {
             this.nonce = nonceBytes;
         } else {
@@ -41,34 +50,36 @@ public class Salsa20 {
             }
         }
     }
-    private void fillNonce(byte[] input) {
+
+    /**
+     * Helper method. Used in the constructor to fill a nonce, which was given a value shorter than 8 bytes
+     * @param input
+     * @param currentLength
+     */
+    private void fillNonce(byte[] input, int currentLength) {
         int i = 0;
-        for ( ; i < input.length; i++ ) {
+        for ( ; i < currentLength; i++ ) {
             nonce[i] = input[i];
         }
         for ( ; i < 8; i++ ) {
             nonce[i] = 0;
         }
     }
-    private void fillTo16(byte[] input) {
-        int i = 0;
-        for ( ; i < input.length; i++ ) {
-            key[i] = input[i];
-        }
-        for ( ; i < 16; i++ ) {
-            key[i] = 0;
-        }
-    }
-    private void fillTo32(byte[] input) {
-        int i = 0;
-        for ( ; i < input.length; i++ ) {
-            key[i] = input[i];
-        }
-        for ( ; i < 32; i++ ) {
-            key[i] = 0;
-        }
-    }
 
+    /**
+     * Helper method for the constructor. Used for filling the key, which was given a value shorter than the specified one
+     * @param givenKey the key bytes taken from String
+     * @param currentLength the length of the key byte array
+     * @param desiredLength the key length chosen by the user
+     */
+    private void fillToKeySize(byte[] givenKey, int currentLength, int desiredLength) {
+        for (int i = 0; i < currentLength; i++) {
+            key[i] = givenKey[i];
+        }
+        for (int i = currentLength; i < desiredLength; i++) {
+            key[i] = 0;
+        }
+    }
 
     public int[] quarterRound(int x0, int x1, int x2, int x3) {
         int[] x = {x0, x1, x2, x3};
@@ -146,10 +157,7 @@ public class Salsa20 {
 
     public int[] doubleRound(int[] x) {
         if (x.length != 16) { throw new IllegalArgumentException("doubleRound"); }
-        int[] result = columnRound(x);
-        result = rowRound(result);
-
-        return result;
+        return rowRound(columnRound(x));
     }
     public int[] doubleRound10(int[] x) {
         if (x.length != 16) { throw new IllegalArgumentException("doubleRound10"); }
@@ -157,27 +165,15 @@ public class Salsa20 {
         result = columnRound(x);
         result = rowRound(result);
         for (int i = 0; i < 9; i++ ) {
-            result = columnRound(result);
-            result = rowRound(result);
+           result = doubleRound(result);
         }
         return result;
     }
     public int littleEndian(byte x0, byte x1, byte x2, byte x3) {
-        /*int intx0 = x0&0xFF;
-        int intx1 = x1&0xFF;
-        int intx2 = x2&0xFF;
-        int intx3 = x3&0xFF;
-        int result = intx0 + (intx1 << 8) + (intx2 << 16) + (intx3 << 24);*/
-        int result = (((x3 & 0xFF) << 8 | x2 & 0xFF) << 8 | x1 & 0xFF) << 8 | x0 & 0xFF;;
-        return result;
+        return (((x3 & 0xFF) << 8 | x2 & 0xFF) << 8 | x1 & 0xFF) << 8 | x0 & 0xFF;
     }
     public byte[] littleEndianInverse(int x) {
-        /*int x0 = (x & 0xFF) & 0xFF;
-        int x1 =  (x >> 8) & 0xFF;
-        int x2 =  (x >> 16) & 0xFF;
-        int x3 =  (x >> 24) & 0xFF;*/
-        byte[] result = {(byte)(x & 0xFF), (byte)((x >> 8) & 0xFF), (byte)((x >> 16) & 0xFF), (byte)((x >> 24) & 0xFF)};
-        return result;
+        return new byte[]{(byte)(x & 0xFF), (byte)((x >> 8) & 0xFF), (byte)((x >> 16) & 0xFF), (byte)((x >> 24) & 0xFF)};
     }
 
    public byte[] hash(byte[] x) {
@@ -189,7 +185,7 @@ public class Salsa20 {
         int[] xLittleEndian = new int[16];
 
         for (int i = 0; i < 16; i++) {
-            xLittleEndian[i] = littleEndian( x[0 + (4 * i)], x[1 + ( 4 * i )], x[2 + ( 4 * i )], x[3 + ( 4 * i )] );
+            xLittleEndian[i] = littleEndian( x[4 * i], x[1 + ( 4 * i )], x[2 + ( 4 * i )], x[3 + ( 4 * i )] );
         }
 
         doubleRound10X = doubleRound10(xLittleEndian);
@@ -252,53 +248,45 @@ public class Salsa20 {
         }
         return hash(hashInput);
     }
-    private void padding (byte[] toPad, int presentLength, int desiredLength) {
-        for (int i = presentLength; i < desiredLength; i++) {
-            toPad[i] = 0;
-        }
-    }
 
-    public String decryptString (byte[] key, byte[] nonce, byte[] ciphertext) {
-        byte[] exp = expansion(key, nonce);
-        byte[] plainText = new byte[64];
-        int mark = 0;
-        for (int i = 0; i < 64; i++) {
-            plainText[i] = (byte) (ciphertext[i] ^ exp[i]);
-            if ( plainText[i] == 0 ) {
-                mark = i;
-                break;
-            }
-        }
-        byte[] plainTextFiltered = Arrays.copyOfRange(plainText, 0, mark);
-        String result = new String(plainTextFiltered);
-        return result;
-    }
 
-    public void encryptFile (String filename) {
+    /**
+     * This method has two modes. It can either include a nonce in the first 8 bits of the ciphertext, or not.
+     * The method reads input from the specified file and writes it to another.
+     * @param Inputfilename file from which to read
+     * @param outputFilename target file for the ciphertext
+     * @param provideNonce determines whether to include the nonce or not
+     */
+    public void encryptFile (String Inputfilename, String outputFilename, boolean provideNonce) {
         try {
-            FileInputStream fis = new FileInputStream(filename);
-
-            File ciphertext = new File("ciphertext.txt");
+            FileInputStream fis = new FileInputStream(Inputfilename);
+            File ciphertext = new File(outputFilename);
             FileOutputStream fos = new FileOutputStream(ciphertext.getAbsolutePath(), true);
 
+            if ( provideNonce ) {
+                fos.write(nonce);
+            }
             byte[] buffer = new byte[64];
             int noBytesRead = fis.read(buffer);
             byte[] keyStream;
             byte[] nonceFilled = new byte[16];
-            long repetitions = 0;
+            long blockNumber = 0;
+            if ( noBytesRead == -1 ) {
+                throw new IllegalArgumentException("Provided file is empty!");
+            }
             while ( noBytesRead == 64 ) {
-                fillNonce(nonce, nonceFilled, repetitions);
+                fillNonce(nonce, nonceFilled, blockNumber);
                 keyStream = expansion(key, nonceFilled);
                 for (int i = 0; i < 64; i++) {
                     buffer[i] = (byte) (buffer[i] ^ keyStream[i]);
                 }
                 fos.write(buffer);
-                repetitions++;
+                blockNumber++;
                 noBytesRead = fis.read(buffer);
             }
             if ( noBytesRead != 0 ) {
-                fillNonce(nonce, nonceFilled,repetitions);
-                padding(buffer, noBytesRead, 64);
+                fillNonce(nonce, nonceFilled,blockNumber);
+                padding(buffer, noBytesRead);
                 keyStream = expansion(key, nonceFilled);
                 for (int i = 0; i < 64; i++) {
                     buffer[i] = (byte) (buffer[i] ^ keyStream[i]);
@@ -308,28 +296,42 @@ public class Salsa20 {
 
             fis.close();
             fos.close();
+        } catch ( FileNotFoundException fnf) {
+            fnf.printStackTrace();
         } catch ( IOException ioe ) {
             ioe.printStackTrace();
+        } catch (IllegalArgumentException iae) {
+            iae.printStackTrace();
         }
     }
 
     /**
-     *
-     * @param filename
+     * This method has two modes as well. It can either decrypt the file using the nonce provided,
+     * or read the nonce from a file (if, of course, one is present).
+     * @param Inputfilename file from which to read
+     * @param outputFilename target file for the plaintext
+     * @param nonceProvided determines whether to include the method acquires the nonce from ciphertext, or not
      */
-    void decryptFile (String filename) {
+    void decryptFile (String Inputfilename, String outputFilename, boolean nonceProvided) {
         try {
-            FileInputStream fis = new FileInputStream(filename);
-            File plaintext = new File("plaintext.txt");
+            FileInputStream fis = new FileInputStream(Inputfilename);
+            File plaintext = new File(outputFilename);
             FileOutputStream fos = new FileOutputStream(plaintext.getAbsolutePath(), true);
+
+            if ( nonceProvided ){
+                if (fis.readNBytes(nonce, 0, 8) == 0) {
+                    throw new IllegalArgumentException("Provided file is empty!");
+                }
+            }
+
 
             byte[] buffer = new byte[64];
             int noBytesRead = fis.read(buffer);
             byte[] keyStream;
             byte[] nonceFilled = new byte[16];
-            long repetitions = 0;
+            long blockNumber = 0;
             while ( noBytesRead == 64 ) {
-                fillNonce(nonce, nonceFilled, repetitions);
+                fillNonce(nonce, nonceFilled, blockNumber);
                 keyStream = expansion(key, nonceFilled);
                 int index = 0;
                 for ( ; index < 64; index++) {
@@ -337,7 +339,7 @@ public class Salsa20 {
                 }
                 if ( buffer[index - 1] != 0 ) {
                     fos.write(buffer);
-                    repetitions++;
+                    blockNumber++;
                     noBytesRead = fis.read(buffer);
                 } else {
                     index = 0;
@@ -353,14 +355,23 @@ public class Salsa20 {
             fos.close();
         } catch (IOException ioe) {
             ioe.printStackTrace();
+        } catch (IllegalArgumentException iae) {
+            iae.printStackTrace();
         }
     }
 
-    public void fillNonce(byte[] nonce, byte[] nonceFilled, long rep) {
+    /**
+     * As the number v, which stands for the number of blocks that have been processed is 8 bytes by design, it is a long,
+     * this method divides the long into an array of 8 bytes and concatenates it with the nonce.
+     * @param nonce the nonce used for encryption / decryption
+     * @param nonceFilled the array representing a nonce concatenated with block number
+     * @param blockNumber block number to be converted and parsed
+     */
+    private void fillNonce(byte[] nonce, byte[] nonceFilled, long blockNumber) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         try {
-            dos.writeLong(rep);
+            dos.writeLong(blockNumber);
             dos.flush();
         } catch (IOException ioe) {
             ioe.printStackTrace();
@@ -375,6 +386,17 @@ public class Salsa20 {
             bos.close();
         } catch (IOException ioe ) {
             ioe.printStackTrace();
+        }
+    }
+
+    /**
+     * Helper method used for filling the last block of data processed during encryption with zeros, in case it is not 64 bytes.
+     * @param toPad block to be written to a ciphertext, which requires padding.
+     * @param presentLength its current length
+     */
+    private void padding (byte[] toPad, int presentLength) {
+        for (int i = presentLength; i < 64; i++) {
+            toPad[i] = 0;
         }
     }
 
