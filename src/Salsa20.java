@@ -159,14 +159,13 @@ public class Salsa20 {
         if (x.length != 16) { throw new IllegalArgumentException("doubleRound"); }
         return rowRound(columnRound(x));
     }
-    public int[] doubleRound10(int[] x) {
+    public int[] doubleRound6(int[] x) {
         if (x.length != 16) { throw new IllegalArgumentException("doubleRound10"); }
         int[] result;
         result = columnRound(x);
         result = rowRound(result);
-        for (int i = 0; i < 9; i++ ) {
+        for (int i = 0; i < 5; i++ )
            result = doubleRound(result);
-        }
         return result;
     }
     public int littleEndian(byte x0, byte x1, byte x2, byte x3) {
@@ -188,7 +187,7 @@ public class Salsa20 {
             xLittleEndian[i] = littleEndian( x[4 * i], x[1 + ( 4 * i )], x[2 + ( 4 * i )], x[3 + ( 4 * i )] );
         }
 
-        doubleRound10X = doubleRound10(xLittleEndian);
+        doubleRound10X = doubleRound6(xLittleEndian);
 
 
         byte[] tempFourBytes;
