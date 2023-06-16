@@ -13,8 +13,8 @@ public class Salsa20 {
      * This constructor takes both key and nonce as strings and converts them to bytes. If a nonce should be zero,
      * an empty String should be provided. The constructor lets the user choose whether they want to operate on
      * a 16-bit or a 32-bit key. If given key or nonce Strings are longer than their byte sizes, they are truncated
-     * @param key
-     * @param nonce
+     * @param key the 16 or 32-bit key
+     * @param nonce the
      * @param keyMode
      */
     public Salsa20(String key, String nonce, int keyMode) {
@@ -164,6 +164,11 @@ public class Salsa20 {
         int[] result;
         result = columnRound(x);
         result = rowRound(result);
+        /**
+         * TODO CHANGE!!
+         * To pass tests, you must change to i < 9 - to pass the original vector tests
+         * To make is a Salsa20/12 variant, change to i < 5
+         */
         for (int i = 0; i < 5; i++ )
            result = doubleRound(result);
         return result;
@@ -177,6 +182,7 @@ public class Salsa20 {
 
    public byte[] hash(byte[] x) {
         if (x.length != 64) { throw new IllegalArgumentException("hash"); }
+
         byte[] result = new byte[64];
 
         int[] doubleRound10X;
@@ -205,13 +211,13 @@ public class Salsa20 {
 
         byte[] hashInput = new byte[64];
 
-        // In case of 32 bytes
+        // In case of 32 bytes - expand 32-byte k
         byte[] a0 = {101, 120, 112, 97};
         byte[] a1 = {110, 100, 32, 51};
         byte[] a2 = {50, 45, 98, 121};
         byte[] a3 = {116, 101, 32, 107};
 
-        // In case of 16 bytes
+        // In case of 16 bytes - expand 16-byte k
         byte[] b0 = {101, 120, 112, 97};
         byte[] b1 = {110, 100, 32, 49};
         byte[] b2 = {54, 45, 98, 121};
@@ -265,6 +271,7 @@ public class Salsa20 {
             if ( provideNonce ) {
                 fos.write(nonce);
             }
+
             byte[] buffer = new byte[64];
             int noBytesRead = fis.read(buffer);
             byte[] keyStream;
